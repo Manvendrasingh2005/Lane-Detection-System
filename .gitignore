@@ -1,0 +1,19 @@
+# Python environments
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Media
+verification_output.jpg
+test_video.mp4
+*.mp4
+*.avi
+*.mkv
+
+# OS level
+.DS_Store
+Thumbs.db
