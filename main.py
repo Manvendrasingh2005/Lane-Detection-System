@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import argparse
 import sys
 
 def canny_edge_detector(image):
@@ -149,39 +150,54 @@ def process_frame(frame):
     return combo_image
 
 def main():
-    if len(sys.argv) > 1:
-        video_path = sys.argv[1]
-    else:
-        video_path = "test_video.mp4"
-        
+    parser = argparse.ArgumentParser(description="Lane Detection System")
+    parser.add_argument("--input", type=str, default="test_video.mp4", help="Path to input video file")
+    parser.add_argument("--output", type=str, default=None, help="Path to output video file (e.g. output.mp4). If specified, runs in headless mode.")
+    args = parser.parse_args()
+
+    video_path = args.input
     cap = cv2.VideoCapture(video_path)
     
     if not cap.isOpened():
         print(f"Error: Could not open video '{video_path}'")
-        print("Please check if the file exists or pass it as an argument: python main.py <video_path>")
         sys.exit(1)
         
     print(f"Successfully opened '{video_path}', processing...")
     
+    # Setup VideoWriter if output is specified
+    out = None
+    if args.output:
+        # Get original video properties for the writer
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        
+        # Define codec and create VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') # type: ignore
+        out = cv2.VideoWriter(args.output, fourcc, fps, (frame_width, frame_height))
+        print(f"Running in headless mode. Saving output to: {args.output}")
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
-            # End of video stream
             break
             
         processed_frame = process_frame(frame)
         
-        # Display the result
-        cv2.imshow("Lane Detection Result", processed_frame)
-        
-        # Press 'q' to exit early
-        # Note: cv2.waitKey(25) waits 25ms between frames (~40fps)
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
+        if out:
+            out.write(processed_frame)
+        else:
+            # Display the result live if no output file is specified
+            cv2.imshow("Lane Detection Result", processed_frame)
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
             
     print("Finished processing video.")
     cap.release()
-    cv2.destroyAllWindows()
+    if out:
+        out.release()
+    else:
+        cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     main()
